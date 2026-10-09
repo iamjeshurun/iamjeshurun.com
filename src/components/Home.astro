@@ -1,0 +1,378 @@
+---
+// The homepage (Option B): oversized masthead, short introduction, numbered project list, layered previews,
+// then Selected Work (each project paired with a real result from its public demo), About and Contact.
+// The optional Spatial view is rendered alongside it by src/pages/index.astro.
+import { getCollection } from 'astro:content';
+import Frame from './Frame.astro';
+import { Image } from 'astro:assets';
+import About from './About.astro';
+import Contact from './Contact.astro';
+
+// Order comes from each project's `order` field: 01 InsightPulse, 02 Tracker, 03 Campus Health, 04 Risk.
+const projects = (await getCollection('work')).sort((a, b) => a.data.order - b.data.order);
+const n = (o: number) => String(o).padStart(2, '0');
+const pos = (i: number) => (i === 0 ? 'active' : 'after'); // first project is selected on first render
+---
+  <section class="hero" id="top" aria-labelledby="hero-name">
+    <h1 class="mast" id="hero-name"><span class="sr-only">Jeshurun</span><span class="mast__word" aria-hidden="true">{[...'Jeshurun'].map((c) => <span class="ch">{c}</span>)}</span></h1>
+
+    <div class="hero__grid">
+      <div class="lead" data-enter="lead">
+        <p class="lead__line">I build cool things.</p>
+        <p class="lead__intro">Computer science and public health student at Stetson University.</p>
+        <div class="lead__cta">
+          <a class="btn btn--primary" href="#work">Explore my work <span class="arrow" aria-hidden="true">↓</span></a>
+          <a class="btn" href="/resume.pdf">View résumé</a>
+        </div>
+      </div>
+
+      <!-- Desktop project area: editorial index (middle) + layered previews (right). -->
+      <div class="picker" id="picker" data-sel="0">
+        <div class="picker__list">
+          <p class="eyebrow picker__label">Selected work · 4</p>
+          <slot name="picker-actions" />
+          <div class="index" role="tablist" aria-label="Choose a project" aria-orientation="vertical">
+            {projects.map((p, i) => (
+              <button class="index__tab" type="button" role="tab" id={`tab-${i}`} aria-controls={`cap-${i}`}
+                aria-selected={String(i === 0)} tabindex={i === 0 ? 0 : -1} data-i={i}>
+                <span class="index__n">{n(p.data.order)}</span>
+                <span class="index__name">{p.data.name}</span>
+                <span class="index__kind">{p.data.kind.split(' · ')[0]}</span>
+                <span class="index__bar" aria-hidden="true"></span>
+              </button>
+            ))}
+          </div>
+          <div class="details">
+            {projects.map((p, i) => (
+              <div class:list={['detail', { 'is-active': i === 0 }]} id={`cap-${i}`} role="tabpanel" aria-labelledby={`tab-${i}`} data-slug={p.id} inert={i !== 0}>
+                <p class="detail__purpose">{p.data.headline ?? p.data.purpose}</p>
+                <div class="detail__links">
+                  <a class="link" href={`/work/${p.id}/`}>Case study <span aria-hidden="true">→</span><span class="sr-only">: {p.data.name}</span></a>
+                  <a class="link" href={p.data.demo} rel="noopener">Live demo <span class="arrow--out" aria-hidden="true">↗</span></a>
+                  <a class="link link--quiet" href={p.data.code} rel="noopener">Code <span class="arrow--out" aria-hidden="true">↗</span></a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div class="previews" id="previews">
+          <div class="previews__enter">
+            <div class="previews__tilt" id="tilt">
+              {projects.map((p, i) => (
+                <div class="pset" data-i={i} data-pos={pos(i)}>
+                  <div class="layer layer--back2" aria-hidden="true"><div class="layer__drift">
+                    <Frame src={p.data.shots[2].src} alt="" host={p.data.host} sizes="(min-width: 900px) 38vw, 1px"><div class="dim"></div></Frame>
+                  </div></div>
+                  <div class="layer layer--back1" aria-hidden="true"><div class="layer__drift">
+                    <Frame src={p.data.shots[1].src} alt="" host={p.data.host} sizes="(min-width: 900px) 38vw, 1px"><div class="dim"></div></Frame>
+                  </div></div>
+                  <div class="layer layer--front">
+                    <Frame src={p.data.shots[0].src} alt={p.data.shots[0].alt} host={p.data.host} sizes="(min-width: 900px) 42vw, 1px" slug={p.id} eager={i === 0}>
+                      <a class="layer__open" href={`/work/${p.id}/`} tabindex="-1" aria-hidden="true"></a>
+                    </Frame>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone project area: one readable card per project in a native scroll-snap row. -->
+    <div class="mwork" id="mwork">
+      <div class="mwork__head">
+        <p class="eyebrow">Selected work</p>
+        <div class="mwork__pills" role="group" aria-label="Jump to a project">
+          {projects.map((p, i) => (
+            <button class="mwork__pill" type="button" data-i={i} aria-pressed={String(i === 0)} aria-label={`${n(p.data.order)} ${p.data.name}`}>{n(p.data.order)}</button>
+          ))}
+        </div>
+      </div>
+      <ol class="mwork__track" id="mtrack" aria-label="Projects">
+        {projects.map((p, i) => (
+          <li class="mcard" data-i={i}>
+            <a class="mcard__shot" href={`/work/${p.id}/`} tabindex="-1" aria-hidden="true">
+              <Frame src={p.data.phone} alt="" sizes="80vw" slug={p.id} class="mcard__frame" />
+            </a>
+            <p class="mcard__n">{n(p.data.order)} · {p.data.kind}</p>
+            <h2 class="mcard__name">{p.data.name}</h2>
+            <p class="mcard__purpose">{p.data.headline ?? p.data.purpose}</p>
+            <div class="mcard__links">
+              <a class="link" href={`/work/${p.id}/`}>Case study <span aria-hidden="true">→</span><span class="sr-only">: {p.data.name}</span></a>
+              <a class="link" href={p.data.demo} rel="noopener">Demo <span class="arrow--out" aria-hidden="true">↗</span></a>
+              <a class="link link--quiet" href={p.data.code} rel="noopener">Code <span class="arrow--out" aria-hidden="true">↗</span></a>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  {/* Selection state is applied here, before first render, so a returning visitor sees their project
+       immediately and the case-study → homepage transition can pair the right preview. */}
+  <script is:inline>
+    (function () {
+      var picker = document.getElementById('picker');
+      var tabs = picker.querySelectorAll('[role="tab"]');
+      var sets = picker.querySelectorAll('.pset');
+      var caps = picker.querySelectorAll('.detail');
+      var pills = document.querySelectorAll('.mwork__pill');
+      var cur = 0;
+      function render(i) {
+        var prev = cur;
+        cur = i;
+        for (var k = 0; k < tabs.length; k++) {
+          var on = k === i;
+          tabs[k].setAttribute('aria-selected', String(on));
+          tabs[k].tabIndex = on ? 0 : -1;
+          sets[k].dataset.pos = on ? 'active' : k < i ? 'before' : 'after';
+          // Only the outgoing set animates away; anything still fading from earlier changes hides at once.
+          sets[k].classList.toggle('is-gone', !on && k !== prev);
+          caps[k].classList.toggle('is-active', on);
+          caps[k].inert = !on; // out of the tab order at once, even while it fades
+          if (pills[k]) pills[k].setAttribute('aria-pressed', String(on));
+        }
+        picker.dataset.sel = String(i);
+        try { sessionStorage.setItem('jsh-sel', String(i)); } catch (e) {}
+      }
+      var saved = null;
+      try { saved = sessionStorage.getItem('jsh-sel'); } catch (e) {}
+      if (saved !== null && +saved > 0 && +saved < tabs.length) render(+saved);
+      window.__jshSel = { render: render, get: function () { return cur; } };
+    })();
+  </script>
+
+  <section class="section" id="work" aria-labelledby="work-title">
+    <div class="work">
+      <aside class="work__aside" aria-label="Project index">
+        <p class="eyebrow">Index</p>
+        <ol>
+          {projects.map((p) => <li><a href={`#p-${p.id}`}><span>{n(p.data.order)}</span>{p.data.short}</a></li>)}
+        </ol>
+      </aside>
+      <div>
+        <div class="work__head">
+          <p class="eyebrow">Selected work</p>
+          <h2 class="section__title" id="work-title">Four projects, end to end.</h2>
+          <p class="section__intro">I’m the only contributor to all four repositories. Each has a live demo, its code, and a write-up of the decisions behind it.</p>
+        </div>
+        <div class="panels">
+          {projects.filter((p) => p.data.workShot).map((p) => {
+            const decision = p.data.decisions[p.data.featuredDecision ?? 0];
+            const shot = p.data.workShot!;
+            return (
+              <article class:list={['wpanel', { 'wpanel--wide': shot.wide }]} id={`p-${p.id}`} aria-labelledby={`pn-${p.id}`}>
+                <div class="wpanel__text">
+                  <p class="panel__n">{n(p.data.order)} · {p.data.kind}</p>
+                  <h3 class="wpanel__name" id={`pn-${p.id}`}>{p.data.name}</h3>
+                  <p class="wpanel__headline">{p.data.headline}</p>
+                  <p class="wpanel__blurb">{p.data.blurb}</p>
+                  <div class="wpanel__decision">
+                    <h4>Engineering decision</h4>
+                    <p><b>{decision.title}.</b> {decision.body}</p>
+                  </div>
+                  <div class="panel__links">
+                    <a class="btn btn--primary" href={`/work/${p.id}/`}>Case study <span class="arrow" aria-hidden="true">→</span><span class="sr-only">: {p.data.name}</span></a>
+                    <a class="link" href={p.data.demo} rel="noopener">Live demo <span class="arrow--out" aria-hidden="true">↗</span></a>
+                    <a class="link" href={p.data.code} rel="noopener">Code <span class="arrow--out" aria-hidden="true">↗</span></a>
+                  </div>
+                </div>
+                <figure class="wpanel__visual">
+                  <div class="panel__shot"><div class="frame frame--card">
+                    <Image src={shot.src} alt={shot.alt} widths={shot.wide ? [640, 1000, 1400, 2100] : [560, 840, 1136]} sizes={shot.wide ? '(min-width: 1000px) 990px, 92vw' : '(min-width: 1000px) 480px, 92vw'} loading="lazy" />
+                  </div></div>
+                  <figcaption>{shot.caption}</figcaption>
+                </figure>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="about" aria-label="About"><About /></section>
+  <section class="section" id="contact" aria-label="Contact" style="padding-top:0"><Contact /></section>
+
+
+<style>
+  /* ---------- Masthead ---------- */
+  .hero { position: relative; padding: 8px var(--gutter) 48px; min-height: 100svh; display: grid; align-content: start; gap: clamp(20px, 2.4vw, 36px); overflow-x: clip; }
+  .mast { font-family: var(--font-display); font-weight: 750; letter-spacing: -0.07em; line-height: 0.8; font-size: min(17.6vw, 20rem); /* a wordmark: scales with the viewport, not the text size */ margin: 0 0 0 -0.05em; white-space: nowrap; position: relative; z-index: 3; }
+  /* The visual letters never take the pointer: during the opening they rise from below, clipped, and Safari
+     still hit-tests clipped content, which swallowed clicks on the controls underneath. */
+  .mast__word { display: inline-block; padding-bottom: 0.04em; pointer-events: none; }
+  @media (min-width: 900px) { .mast { margin-top: 14px; } }
+  .mast .ch { display: inline-block; }
+
+  .hero__grid { display: grid; gap: 32px; }
+  .hero__grid > * { min-width: 0; }
+  @media (min-width: 1200px) { .hero__grid { grid-template-columns: 3.9fr 9.6fr; gap: clamp(24px, 2.6vw, 48px); align-items: start; } }
+  /* Narrow desktops: the introduction becomes a row, so the list and previews keep their width. */
+  /* Narrow desktops: the short introduction becomes a row, so the list and previews keep their width. */
+  @media (min-width: 900px) and (max-width: 1199px) {
+    .lead { display: grid; grid-template-columns: auto 1fr; gap: 6px 40px; align-items: center; }
+    .lead__line { grid-column: 1; grid-row: 1 / span 2; }
+    .lead__intro { grid-column: 2; margin-top: 0; }
+    .lead__cta { grid-column: 2; margin-top: 10px; }
+  }
+  @media (max-width: 1279px) { .index__kind { display: none; } .index__tab { grid-template-columns: 34px 1fr; } }
+  .lead__line { font-size: clamp(1.875rem, 2.6vw, 2.5rem); line-height: 1.08; letter-spacing: -0.035em; font-weight: 650; }
+  .lead__intro { color: var(--text-2); margin-top: 14px; font-size: 1.0625rem; max-width: 30ch; }
+  .lead__cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  /* Where the introduction column is narrow, stack the two actions deliberately instead of letting them wrap. */
+  @media (min-width: 1200px) and (max-width: 1439px) { .lead__cta { flex-direction: column; align-items: flex-start; } }
+
+  /* ---------- Desktop project area ---------- */
+  .picker { display: grid; grid-template-columns: 4fr 6fr; gap: clamp(24px, 2.6vw, 48px); align-items: start; }
+  .picker > * { min-width: 0; }
+  .picker__label { margin-bottom: 12px; }
+  .index { border-top: 1px solid var(--line); }
+  .index__tab {
+    position: relative; display: grid; grid-template-columns: 34px 1fr auto; align-items: baseline; gap: 8px; width: 100%;
+    min-height: 56px; padding: 14px 0; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; cursor: pointer; color: var(--text-3);
+  }
+  .index__n { font-family: var(--font-mono); font-size: 0.8125rem; transition: color var(--t-small); }
+  .index__name { font-size: 1.1875rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; color: var(--text-2); transition: color var(--t-micro), transform var(--t-small) var(--ease-out); }
+  .index__kind { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-3); white-space: nowrap; }
+  .index__tab:hover .index__name { color: var(--text); transform: translateX(4px); }
+  .index__tab[aria-selected="true"] .index__n { color: var(--accent); }
+  .index__tab[aria-selected="true"] .index__name { color: var(--text); }
+  /* Active marker: accent rule on the selected row; it fills as auto-advance counts down. */
+  .index__bar { position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%; background: var(--accent); transform-origin: 0 50%; transform: scaleX(0); transition: transform var(--t-small) var(--ease-out); }
+  .index__tab[aria-selected="true"] .index__bar { transform: scaleX(var(--p, 1)); }
+  .picker[data-rotating="on"] .index__tab[aria-selected="true"] .index__bar { transition: none; }
+
+  /* Descriptions share one grid cell, so the list never shifts height when the selection changes. */
+  .details { display: grid; margin-top: 18px; }
+  .detail { grid-area: 1 / 1; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity 110ms linear, transform 110ms linear, visibility 0s linear 110ms; }
+  /* Incoming text waits for the outgoing text to clear (110 ms), so two descriptions never overlap. */
+  .detail.is-active { opacity: 1; visibility: visible; transform: none; transition: opacity 240ms var(--ease-out) 110ms, transform 340ms var(--ease-out) 110ms, visibility 0s; }
+  .detail__purpose { color: var(--text); font-size: 1.0625rem; line-height: 1.4; letter-spacing: -0.01em; }
+  .detail__links { display: flex; flex-wrap: wrap; gap: 0 18px; margin-top: 4px; }
+  .detail__links .link { font-size: 0.9375rem; }
+
+  /* Layered previews. One stable foreground; two supporting screens behind it drift subtly.
+     Project changes are pure CSS state (data-pos), so rapid or interrupted changes retarget smoothly. */
+  .previews { position: relative; aspect-ratio: 1.12; margin: -24px calc(-1 * var(--gutter)) 0 0; perspective: 1500px; perspective-origin: 30% 45%; touch-action: pan-y; }
+  .previews__enter, .previews__tilt { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .previews__tilt { transform: rotateY(calc(-11deg + var(--px, 0) * 1deg)) rotateX(calc(3deg + var(--py, 0) * 1deg)); }
+  .pset { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 40% 50%; }
+  /* The outgoing set clears (150 ms) before the incoming one fades up, so foregrounds never double-expose. */
+  .pset[data-pos="active"] { transform: none; opacity: 1; visibility: visible; transition: transform 760ms var(--ease-out), opacity 380ms var(--ease-out) 130ms, visibility 0s; }
+  .pset[data-pos="before"], .pset[data-pos="after"] { opacity: 0; visibility: hidden; pointer-events: none; transition: transform 520ms var(--ease-in-out), opacity 150ms var(--ease-in), visibility 0s linear 520ms; }
+  .pset[data-pos="before"] { transform: translateY(-20%) rotateX(26deg) scale(0.96); }
+  .pset.is-gone { transition: none; }
+  .pset[data-pos="after"] { transform: translateY(24%) rotateX(-24deg) scale(0.96); }
+  .layer { position: absolute; left: 0; top: 21%; width: 84%; transform-style: preserve-3d; }
+  .layer--back1 { transform: translate3d(13%, -25%, -170px); pointer-events: none; }
+  .layer--back2 { transform: translate3d(17%, 27%, -260px); pointer-events: none; }
+  .layer--back1 :global(.dim) { opacity: 0.38; }
+  .layer--back2 :global(.dim) { opacity: 0.5; }
+  .layer--front :global(.frame) { box-shadow: 0 0 0 1px rgba(165,150,255,0.3), 0 40px 80px -24px rgba(0,0,0,0.9); }
+  /* 3D hit-testing: the tilted foreground dips behind its wrappers' flat planes, so only the foreground link
+     takes the pointer. Wrappers and supporting layers never intercept clicks. */
+  .previews__enter, .previews__tilt, .pset, .layer { pointer-events: none; }
+  .layer__open { position: absolute; inset: 0; z-index: 2; border-radius: var(--radius); pointer-events: auto; }
+  .layer__drift { animation: drift-a 9s ease-in-out infinite alternate; animation-play-state: paused; }
+  .layer--back2 .layer__drift { animation-name: drift-b; animation-duration: 12s; }
+  .previews.is-live .layer__drift { animation-play-state: running; }
+  .previews.is-live.is-settled .layer__drift { animation-play-state: paused; }
+  @keyframes drift-a { to { transform: translate3d(-1.4%, 1.8%, 0); } }
+  @keyframes drift-b { to { transform: translate3d(1.6%, -1.4%, 0); } }
+
+  /* ---------- Phone project area ---------- */
+  .mwork { display: none; }
+  @media (max-width: 899px) {
+    .hero { min-height: 0; padding-top: 4px; }
+    .picker { display: none; }
+    .mwork { display: block; margin-top: 8px; }
+  }
+  .mwork__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .mwork__pills { display: flex; gap: 6px; }
+  .mwork__pill { width: 48px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: none; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-3); cursor: pointer; transition: color var(--t-micro), border-color var(--t-micro), background-color var(--t-micro); }
+  .mwork__pill[aria-pressed="true"] { color: var(--text); border-color: rgba(165,150,255,0.5); background: var(--accent-wash); }
+  .mwork__track {
+    list-style: none; margin: 0 calc(-1 * var(--gutter)); padding: 4px var(--gutter) 10px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 82%; gap: 14px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); overscroll-behavior-x: contain; scrollbar-width: none;
+  }
+  .mwork__track::-webkit-scrollbar { display: none; }
+  .mcard { scroll-snap-align: start; min-width: 0; perspective: 900px; }
+  .mcard__shot { display: block; border-radius: 20px; }
+  .mcard :global(.mcard__frame) { border-radius: 20px; }
+  .mcard :global(.mcard__frame img) { aspect-ratio: 4 / 5; }
+  .mcard__n { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--accent); margin-top: 14px; }
+  .mcard__name { font-size: 1.375rem; letter-spacing: -0.025em; line-height: 1.15; margin: 6px 0 8px; }
+  .mcard__purpose { color: var(--text-2); font-size: 1rem; }
+  .mcard__links { display: flex; flex-wrap: wrap; gap: 0 16px; }
+  /* Depth on phones: neighbouring cards sit slightly back; driven by scroll position where supported. */
+  @supports (animation-timeline: view()) {
+    .mcard__shot { animation: card-depth linear both; animation-timeline: view(inline); }
+    @keyframes card-depth { 0% { transform: rotateY(14deg) scale(0.92); opacity: 0.55; } 40%, 60% { transform: none; opacity: 1; } 100% { transform: rotateY(-14deg) scale(0.92); opacity: 0.55; } }
+  }
+  :global([data-motion="reduced"]) .mcard__shot { animation: none; }
+
+  /* ---------- Selected Work: sticky index + screens that flatten as they arrive ---------- */
+  .work { display: grid; gap: 40px; max-width: var(--max); margin-inline: auto; }
+  .work > * { min-width: 0; }
+  @media (min-width: 1000px) { .work { grid-template-columns: 260px 1fr; gap: 72px; } }
+  .work__aside { position: sticky; top: 32px; align-self: start; display: none; }
+  @media (min-width: 1000px) { .work__aside { display: block; } }
+  .work__aside ol { list-style: none; padding: 0; margin: 20px 0 0; border-top: 1px solid var(--line); }
+  .work__aside a { position: relative; display: grid; grid-template-columns: 34px 1fr; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--text-3); font-weight: 500; transition: color var(--t-micro); }
+  .work__aside a span { font-family: var(--font-mono); font-size: 0.8125rem; }
+  .work__aside a:hover, .work__aside a[aria-current] { color: var(--text); }
+  .work__aside a[aria-current] span { color: var(--accent); }
+  .work__aside a::after { content: ''; position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--t-medium) var(--ease-out); }
+  .work__aside a[aria-current]::after { transform: scaleX(1); }
+  .work__head { margin-bottom: clamp(48px, 6vw, 80px); display: grid; gap: 14px; }
+  .panels { display: grid; gap: clamp(96px, 12vw, 168px); }
+  .panels > *, .panel > *, .work__head > * { min-width: 0; }
+  .panel__shot { display: block; perspective: 1400px; margin-bottom: 32px; border-radius: var(--radius); }
+  .panel__shot :global(.frame) { transform-origin: 50% 100%; will-change: transform; }
+  .panel__head { display: grid; gap: 10px 48px; }
+  .panel__head > * { min-width: 0; }
+  @media (min-width: 760px) { .panel__head { grid-template-columns: 1.1fr 1fr; } }
+  .panel__n { font-family: var(--font-mono); color: var(--accent); font-size: 0.875rem; }
+  .panel__name { font-size: clamp(2rem, 3.4vw, 3rem); letter-spacing: -0.045em; line-height: 1; margin-top: 8px; }
+  .panel__purpose { font-size: 1.1875rem; line-height: 1.5; }
+  .panel__grid { display: grid; gap: 22px 48px; margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .panel__grid > * { min-width: 0; }
+  @media (min-width: 760px) { .panel__grid { grid-template-columns: 1fr 1fr; } }
+  .panel__grid h4 { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .panel__grid p { color: var(--text-2); }
+  .panel__links { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-top: 26px; }
+  #work { padding-top: clamp(56px, 7vw, 96px); }
+
+  /* Selected Work, refreshed: text and a real result side by side; screenshots arrive tilted and flatten. */
+  .wpanel { display: grid; gap: 28px 56px; align-items: start; }
+  .wpanel > * { min-width: 0; }
+  @media (min-width: 1100px) {
+    .wpanel { grid-template-columns: 1fr minmax(0, 480px); }
+    /* Portrait results alternate sides; wide charts take the full width beneath the text. */
+    .wpanel:nth-child(even):not(.wpanel--wide) { grid-template-columns: minmax(0, 480px) 1fr; }
+    .wpanel:nth-child(even):not(.wpanel--wide) .wpanel__visual { order: -1; }
+    .wpanel--wide { grid-template-columns: 1fr; }
+    .wpanel--wide .wpanel__text { display: grid; grid-template-columns: 1.05fr 1fr; gap: 0 56px; align-items: start; }
+    .wpanel--wide .wpanel__text > :nth-child(-n+4) { grid-column: 1; }
+    .wpanel--wide .wpanel__decision { grid-column: 2; grid-row: 1 / span 4; margin-top: 30px; }
+    .wpanel--wide .panel__links { grid-column: 2; }
+  }
+  .wpanel__name { font-size: clamp(2rem, 3.4vw, 3rem); letter-spacing: -0.045em; line-height: 1; margin-top: 8px; }
+  .wpanel__headline { font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.3; letter-spacing: -0.02em; font-weight: 600; margin-top: 18px; max-width: 30ch; }
+  .wpanel__blurb { color: var(--text-2); margin-top: 10px; max-width: 52ch; }
+  .wpanel__decision { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); max-width: 58ch; }
+  .wpanel__decision h4 { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .wpanel__decision p { color: var(--text-2); }
+  .wpanel__decision b { color: var(--text); font-weight: 600; }
+  .wpanel__visual { margin: 0; }
+  .wpanel__visual .panel__shot { margin-bottom: 14px; }
+  .wpanel__visual :global(.frame--card) { border-radius: 18px; background: #131416; }
+  .wpanel--wide .wpanel__visual :global(.frame--card) { border-radius: 14px; }
+  .wpanel__visual :global(.frame--card img) { width: 100%; height: auto; aspect-ratio: auto; object-fit: contain; display: block; } /* natural proportions: nothing important cropped */
+  .wpanel__visual figcaption { color: var(--text-3); font-size: 0.875rem; line-height: 1.5; }
+  .section__title { letter-spacing: -0.05em; }
+</style>

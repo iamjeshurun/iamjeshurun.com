@@ -1,0 +1,50 @@
+order: 1
+name: "InsightPulse"
+short: "InsightPulse"
+kind: "Machine learning · Evaluation"
+purpose: "Sorts customer complaints into themes, shows the words behind each label, and sends the least confident predictions to a person."
+host: "iamjeshurun.github.io/InsightPulse"
+demo: "https://iamjeshurun.github.io/InsightPulse/"
+code: "https://github.com/iamjeshurun/InsightPulse"
+deep:
+  label: "Benchmark results"
+  href: "https://github.com/iamjeshurun/InsightPulse/blob/main/docs/benchmark-results.md"
+demoNote: "Opens on a precomputed example. The live model runs on a free-tier server that can take up to a minute to wake."
+shots:
+  - src: ../../assets/shots/insight-0.webp
+    alt: "InsightPulse demo opening: “Know what customers complain about. And why the model thinks so.”"
+  - src: ../../assets/shots/insight-1.webp
+    alt: "InsightPulse demo: complaint themes with per-theme F1 scores, and a highlighted complaint showing the words behind its label."
+  - src: ../../assets/shots/insight-2.webp
+    alt: "InsightPulse demo, “Where it disagrees”: the most confident disagreements with CFPB’s own categories, with highlighted evidence words."
+phone: ../../assets/shots/insight-phone.webp
+problem: "“Is this review positive or negative?” is rarely the useful question. A support team needs to know what a complaint is about, which predictions deserve a second look, and whether the model can still be trusted."
+built: "I rebuilt an earlier Flask app into a FastAPI, React and SQLite platform. It includes a reproducible data pipeline (PII redaction, deduplication, leakage-safe splits) and classical and transformer models evaluated under one shared contract. It also has a versioned API with batch jobs, and a review queue where corrections accumulate into an evaluation set."
+summary: "An ML application that labels complaint themes, shows its evidence, and routes uncertain predictions to review. It was evaluated against a baseline under a written promotion rule."
+limits: "There is no aspect-level sentiment, authentication or multi-instance scaling yet. CFPB stopped publishing complaint narratives on 14 August 2026, so evaluation on new complaints is no longer possible."
+flow:
+  - "Complaint text"
+  - "Validate, redact, dedupe"
+  - "TF-IDF model (promoted)"
+  - "FastAPI + SQLite"
+  - "Dashboard + review queue"
+decisions:
+  - title: "A written promotion rule"
+    body: "On 8-class aspect labels, the TF-IDF baseline reached 0.642 macro-F1. Three fine-tuned transformers all scored lower (best 0.564), so none was promoted."
+  - title: "Review where it helps"
+    body: "I chose the 0.40 review threshold on 2019 validation data. It flags about 36% of the 2019 test set and catches about 63% of its errors. An earlier 0.65 rule flagged 76% of records, which made it useless for triage."
+evidence:
+  - "On 3,581 archived 2024 complaints, labels matched CFPB’s categories 76.8% of the time, against a 64.0% majority-class baseline. Macro-F1 fell from 0.642 to 0.556. I present this as a case study, not a held-out test."
+  - "Found and removed about 10% train/test leakage in the intent benchmark."
+boundary:
+  - title: "Precomputed example"
+    body: "Archived January 2024 CFPB complaints, labelled by the bundled model."
+  - title: "Live inference"
+    body: "Free-tier API. The first request after an idle period can take up to a minute."
+headline: "Understand customer complaints—and see what informed the prediction."
+blurb: "Classifies complaint themes, highlights contributing words, and routes uncertain predictions for review."
+featuredDecision: 1
+workShot:
+  src: ../../assets/shots/insight-live-review.webp
+  alt: "Live InsightPulse result for a sample complaint: theme Fees & interest at 38% confidence, marked Needs review because it is below the 0.40 threshold. The words fee (+0.92), charged (+0.50), late (+0.18) and was applied (+0.06) are highlighted as contributions to the label."
+  caption: "Live result from the public demo, for a sample complaint written for this portfolio. Word scores are the linear model’s feature contributions toward this theme, not an explanation of cause."

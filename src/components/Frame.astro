@@ -1,0 +1,43 @@
+---
+// A real screenshot in a minimal browser frame, with responsive AVIF/WebP sources.
+// `phone` swaps in the app's own mobile screenshot below 900px wide.
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  sizes: string;
+  host?: string;
+  phone?: ImageMetadata;
+  phoneSizes?: string;
+  eager?: boolean;
+  slug?: string;
+  vt?: boolean;
+  class?: string;
+}
+const { src, alt, sizes, host, phone, phoneSizes = '64vw', eager = false, slug, vt = false, class: cls } = Astro.props;
+
+async function srcset(img: ImageMetadata, format: 'avif' | 'webp', widths: number[]) {
+  const ws = widths.filter((w) => w <= img.width);
+  const out = await Promise.all(ws.map((w) => getImage({ src: img, width: w, format })));
+  return out.map((o, i) => `${o.src} ${ws[i]}w`).join(', ');
+}
+const W = [640, 960, 1280, 1920];
+const PW = [420, 640, 1000];
+const [avif, webp] = await Promise.all([srcset(src, 'avif', W), srcset(src, 'webp', W)]);
+const fallback = await getImage({ src, width: 1280, format: 'webp' });
+const [pAvif, pWebp] = phone ? await Promise.all([srcset(phone, 'avif', PW), srcset(phone, 'webp', PW)]) : [null, null];
+---
+<figure class:list={['frame', cls]} data-slug={slug} style={vt ? 'view-transition-name: shot' : undefined}>
+  {host && <div class="frame__bar" aria-hidden="true">{host}</div>}
+  <picture>
+    {phone && <source media="(max-width: 899px)" type="image/avif" srcset={pAvif} sizes={phoneSizes} />}
+    {phone && <source media="(max-width: 899px)" type="image/webp" srcset={pWebp} sizes={phoneSizes} />}
+    <source type="image/avif" srcset={avif} sizes={sizes} />
+    <source type="image/webp" srcset={webp} sizes={sizes} />
+    <img src={fallback.src} width="1600" height="1000" alt={alt}
+      loading={eager ? 'eager' : 'lazy'} decoding="async" fetchpriority={eager ? 'high' : undefined} />
+  </picture>
+  <slot />
+</figure>

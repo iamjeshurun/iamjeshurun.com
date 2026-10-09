@@ -1,0 +1,55 @@
+order: 2
+name: "Internship Discovery & Application Tracker"
+short: "Application Tracker"
+kind: "Systems · Automation"
+purpose: "Finds internship postings, scores each one with written reasons, and tracks every application from mailbox updates. It never submits anything."
+host: "iamjeshurun.github.io/internship-monitor"
+demo: "https://iamjeshurun.github.io/internship-monitor/"
+code: "https://github.com/iamjeshurun/internship-monitor"
+deep:
+  label: "Engineering log"
+  href: "https://github.com/iamjeshurun/internship-monitor/blob/main/docs/ENGINEERING_LOG.md"
+demoNote: "Public demo: 16 fictional records scored by the real scoring code. My own applications never leave my machine."
+shots:
+  - src: ../../assets/shots/tracker-0.webp
+    alt: "Internship tracker demo opening: sixteen fictional records grouped by current status: To review, In progress, Offer and Closed."
+  - src: ../../assets/shots/tracker-1.webp
+    alt: "Internship tracker demo board view: fictional application cards grouped by stage, each with a match score and its source."
+  - src: ../../assets/shots/tracker-2.webp
+    alt: "Internship tracker demo: later board columns and a review-queue summary with counts for each stage."
+phone: ../../assets/shots/tracker-phone.webp
+problem: "Internship postings are scattered across company career boards. Keeping a spreadsheet in step with an inbox full of receipts, assessments and rejections is slow and error-prone."
+built: "I designed and built the whole system, and I use it for my own search. A scheduled GitHub Actions job polls Greenhouse, Lever, Ashby, company pages and the Simplify list, then scores every posting against a profile with written reasons. On my Mac, a local agent sends notifications, a Flask dashboard replaces the spreadsheet, and a 15-minute Apple Mail sync moves each application to its new stage."
+summary: "A scheduled cloud job finds and scores postings with written reasons. On my Mac, a local dashboard and mail sync track each application through its stages."
+limits: "Mail coverage is limited to the Inbox, Archive and job-named folders. JSON interchange works at hundreds of rows but would be the first thing to replace at scale. Status precedence is hard-coded."
+flow:
+  - "Public job boards"
+  - "Actions poller: dedupe, score"
+  - "JSON review queue"
+  - "Mac agent + mail sync"
+  - "Local dashboard"
+decisions:
+  - title: "Place work by privilege"
+    body: "Credential-free polling runs on short-lived cloud runners. Anything that needs mailbox or notification permissions stays on my machine. The two halves only exchange JSON files, so neither can break the other’s schedule."
+  - title: "Explainable scoring over ML"
+    body: "Scores come from a deterministic rule engine, so every score and every rejection carries a stated reason I can audit."
+  - title: "Merge order must not matter"
+    body: "Apple Mail’s locale-formatted dates once sorted “Thursday” after “Tuesday” and let older statuses overwrite newer ones. Every event is now normalized to an ISO date, and the merge gives the same result in any order."
+evidence:
+  - "A 13-case fault-injection suite found four failures. All are fixed and kept as regression tests."
+  - "Fixed a dedupe key that merged distinct requisitions with identical titles (about 19% of listings on one run)."
+  - "Frontend tests compare all 128 demo record/status combinations against the Python merger."
+boundary:
+  - title: "Public demo"
+    body: "A static site with fictional fixtures, scored by the real scorer. It never calls a mailbox or an API."
+  - title: "Local tracker"
+    body: "Runs on 127.0.0.1 against my real queue and mail metadata. Never published."
+  - title: "Private config"
+    body: "Profile, accounts and job history live in a separate private repository."
+headline: "Find opportunities. Keep track of what happens next."
+blurb: "Screens internship postings and brings application stages and email updates into one workflow."
+featuredDecision: 1
+workShot:
+  src: ../../assets/shots/tracker-work.webp
+  alt: "Tracker demo record for a fictional Meridian Software Engineering Intern posting: current status Assessment, from mailbox inference; profile match 63 out of 100; reasons include target term summer 2027, role match software engineering, skills python, java, backend and api, and location New York; two fictional mailbox updates, applied on October 4 and assessment on October 5, 2026."
+  caption: "From the public demo: a fictional posting’s screening reasons, its stage inferred from mailbox activity, and the email events behind it. No real applications appear in the demo."

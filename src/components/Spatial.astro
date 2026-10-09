@@ -1,0 +1,183 @@
+---
+// Optional Spatial view of the same four projects. A modal dialog: the scene moves, the controls never do.
+// Geometry lives in CSS (unit positions × card size), so the resting composition needs no script and
+// survives resizing; src/scripts/spatial.ts owns the camera only while it is moving.
+import { getCollection } from 'astro:content';
+import Frame from './Frame.astro';
+
+const projects = (await getCollection('work')).sort((a, b) => a.data.order - b.data.order);
+const n = (o: number) => String(o).padStart(2, '0');
+// A staggered arc, left to right in project order, alternating high and low, so that from any focus
+// the neighbouring projects peek in at the sides. Units of --sx / --sy.
+const UNITS: [number, number][] = [[0, 0], [1, 0.5], [2, 0.08], [3, 0.6]];
+---
+<dialog class="sp" id="spatial" aria-labelledby="sp-title" aria-describedby="sp-hint" tabindex="-1">
+  <div class="sp__stage" id="sp-stage">
+    <div class="sp__world" id="sp-world" aria-hidden="true" style={`--ax:${UNITS[0][0]};--ay:${UNITS[0][1]}`}>
+      <div class="sp__dots"></div>
+      {projects.map((p, i) => (
+        <div class:list={['sp-cluster', { 'is-active': i === 0 }]} data-i={i} data-ux={UNITS[i][0]} data-uy={UNITS[i][1]} style={`--ux:${UNITS[i][0]};--uy:${UNITS[i][1]}`}>
+          <div class="sp-enter">
+            <div class="sp-sat sp-sat--a"><div class="sp-float"><Frame src={p.data.shots[1].src} alt="" host={p.data.host} sizes="(min-width: 900px) 28vw, 60vw"><div class="dim"></div></Frame></div></div>
+            <div class="sp-sat sp-sat--b"><div class="sp-float"><Frame src={p.data.shots[2].src} alt="" host={p.data.host} sizes="(min-width: 900px) 26vw, 60vw"><div class="dim"></div></Frame></div></div>
+            <div class="sp-card">
+              <Frame src={p.data.shots[0].src} alt="" host={p.data.host} sizes="(min-width: 900px) 42vw, 80vw" slug={p.id} class="sp-card__frame" />
+              <div class="sp-card__label">
+                <span class="sp-card__n">{n(p.data.order)} · {p.data.kind}</span>
+                <span class="sp-card__name">{p.data.name}</span>
+                <span class="sp-card__cue sp-card__cue--open">Open case study <span aria-hidden="true">→</span></span>
+                <span class="sp-card__cue sp-card__cue--select">Bring to front</span>
+              </div>
+              <a class="sp-card__hit" href={`/work/${p.id}/`} data-i={i} tabindex="-1" draggable="false"></a>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <header class="sp-top">
+    <div>
+      <h2 class="sp-top__title" id="sp-title">Spatial view</h2>
+      <p class="sp-top__hint" id="sp-hint">Drag the field, use the arrow keys, or choose a project below. Click the front project to open it.</p>
+    </div>
+    <div class="sp-top__actions">
+      <button class="btn btn--sm" type="button" id="sp-recenter">Recenter</button>
+      <button class="btn btn--sm" type="button" id="sp-exit">Exit spatial view <kbd>Esc</kbd></button>
+    </div>
+  </header>
+
+  <nav class="sp-bar" aria-label="Projects in spatial view">
+    <div class="sp-bar__picks">
+      {projects.map((p, i) => (
+        <button class="sp-pick" type="button" data-i={i} aria-pressed={String(i === 0)} data-slug={p.id} data-name={p.data.name} data-demo={p.data.demo}>
+          <span class="sp-pick__n">{n(p.data.order)}</span><span class="sp-pick__name">{p.data.short}</span>
+        </button>
+      ))}
+    </div>
+    <div class="sp-bar__now">
+      <span class="sp-bar__name" id="sp-now" aria-live="polite">{projects[0].data.name}</span>
+      <a class="btn btn--primary btn--sm" id="sp-open" href={`/work/${projects[0].id}/`}>Open case study <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="link" id="sp-demo" href={projects[0].data.demo} rel="noopener">Live demo <span class="arrow--out" aria-hidden="true">↗</span></a>
+    </div>
+  </nav>
+</dialog>
+
+{/* Returning from a case study opened in Spatial view: reopen it with the same project before first render,
+    so the visitor lands where they left and the page transition pairs the right card. */}
+<script is:inline>
+  (function () {
+    var st = history.state && history.state.spatial;
+    if (!st || !st.open || innerWidth < 900) return;
+    var d = document.getElementById('spatial');
+    var i = st.sel | 0;
+    var cl = d.querySelectorAll('.sp-cluster');
+    if (!cl[i]) return;
+    for (var k = 0; k < cl.length; k++) cl[k].classList.toggle('is-active', k === i);
+    var w = document.getElementById('sp-world');
+    w.style.setProperty('--ax', cl[i].dataset.ux); w.style.setProperty('--ay', cl[i].dataset.uy);
+    d.dataset.restore = String(i);
+    if (window.__jshSel) window.__jshSel.render(i);
+    d.showModal();
+    var f = cl[i].querySelector('.sp-card .frame');
+    if (!f) return;
+    f.style.viewTransitionName = 'shot';
+    addEventListener('pagereveal', function (e) {
+      var clear = function () { f.style.viewTransitionName = ''; };
+      if (e.viewTransition) e.viewTransition.finished.finally(clear); else clear();
+    }, { once: true });
+  })();
+</script>
+
+<style>
+  .sp {
+    --cw: clamp(340px, 40vw, 660px);   /* front card width */
+    --sx: calc(var(--cw) * 1.17);      /* horizontal unit */
+    --sy: calc(var(--cw) * 0.5);       /* vertical unit */
+    position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+    background: radial-gradient(120% 90% at 50% 40%, #15171c 0%, var(--bg) 60%); color: var(--text); overflow: hidden;
+    overscroll-behavior: none; /* horizontal swipes never fall through to browser back/forward */
+  }
+  .sp::backdrop { background: var(--bg); }
+  .sp:focus { outline: none; } /* the dialog itself only holds focus for pointer users */
+  .sp__stage { position: absolute; inset: 0; perspective: 1600px; perspective-origin: 50% 45%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .sp__stage.is-dragging { cursor: grabbing; }
+  .sp :global(img) { -webkit-user-drag: none; user-select: none; pointer-events: none; }
+
+  /* The world is a zero-size origin at the stage centre. At rest its offset is CSS (active unit × size);
+     while moving, spatial.ts writes an inline transform in pixels, then removes it once settled. */
+  .sp__world {
+    position: absolute; left: 50%; top: 45%; width: 0; height: 0; transform-style: preserve-3d; pointer-events: none;
+    transform: translate3d(calc(var(--ax) * var(--sx) * -1), calc(var(--ay) * var(--sy) * -1), 0);
+  }
+  .sp__dots { position: absolute; left: -220vw; top: -220vh; width: 520vw; height: 520vh; transform: translateZ(-420px) scale(1.27);
+    background: radial-gradient(circle, rgba(236,240,247,0.11) 1.2px, transparent 1.6px) 0 0 / 34px 34px; }
+
+  .sp-cluster { position: absolute; left: calc(var(--ux) * var(--sx)); top: calc(var(--uy) * var(--sy)); width: var(--cw); transform: translate(-50%, -50%); transform-style: preserve-3d; pointer-events: none; }
+  .sp-enter { position: relative; transform-style: preserve-3d; }
+  .sp-sat { position: absolute; transform-style: preserve-3d; pointer-events: none; }
+  .sp-sat--a { width: 64%; right: -26%; top: -20%; transform: translateZ(-190px); }
+  .sp-sat--b { width: 56%; left: -24%; top: 16%; transform: translateZ(-280px); } /* behind the card body, never behind the name */
+  .sp-sat :global(.dim) { opacity: 0.55; }
+  /* Non-selected projects recede as a whole, so bright (light-themed) screens never compete with the focus. */
+  .sp-sat { transition: filter 420ms var(--ease-out); }
+  .sp-cluster:not(.is-active) .sp-sat { filter: brightness(0.5) saturate(0.7); }
+  .sp-float { animation: sp-float 10s ease-in-out infinite alternate; }
+  .sp-sat--b .sp-float { animation-duration: 13s; animation-direction: alternate-reverse; }
+  @keyframes sp-float { to { transform: translate3d(1.5%, -2%, 0); } }
+
+  /* Card emphasis is CSS-owned (class flip); the camera is JS-owned. Different elements, no conflict. */
+  .sp-card { position: relative; transform: scale(0.82); transform-origin: 50% 40%; transition: transform 560ms var(--ease-out), filter 420ms var(--ease-out); filter: brightness(0.55) saturate(0.8); }
+  .sp-cluster.is-active .sp-card { transform: none; filter: none; }
+  .sp-cluster.is-active .sp-card :global(.sp-card__frame) { box-shadow: 0 0 0 1px rgba(165,150,255,0.45), 0 50px 90px -30px rgba(0,0,0,0.95); }
+  .sp-card__label { display: grid; gap: 2px; padding: 14px 4px 0; }
+  .sp-card__n { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--accent); }
+  .sp-card__name { font-size: 1.375rem; font-weight: 650; letter-spacing: -0.025em; line-height: 1.2; }
+  .sp-card__cue { font-size: 0.9375rem; font-weight: 600; color: var(--text-2); display: none; }
+  .sp-cluster.is-active .sp-card__cue--open { display: inline-block; color: var(--text); }
+  .sp-cluster:not(.is-active) .sp-card__cue--select { display: inline-block; opacity: 0; transition: opacity var(--t-micro); }
+  .sp-card__hit { position: absolute; inset: -6px; z-index: 3; border-radius: calc(var(--radius) + 6px); pointer-events: auto; -webkit-user-drag: none; cursor: pointer; }
+  .sp-cluster:not(.is-active) .sp-card:has(.sp-card__hit:hover) { filter: brightness(0.82) saturate(0.95); }
+  .sp-cluster:not(.is-active) .sp-card:has(.sp-card__hit:hover) .sp-card__cue--select { opacity: 1; }
+  .sp-cluster.is-active .sp-card:has(.sp-card__hit:hover) .sp-card__cue--open { color: var(--accent-strong); }
+  .sp__stage.is-dragging .sp-card__hit { cursor: grabbing; }
+
+  /* ---------- Controls: outside the scene, never transformed ---------- */
+  .sp-top { position: absolute; z-index: 5; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 18px var(--gutter) 40px; pointer-events: none;
+    background: linear-gradient(rgba(13,14,16,0.92) 0%, rgba(13,14,16,0.7) 55%, rgba(13,14,16,0) 100%); }
+  .sp-top > * { pointer-events: auto; }
+  .sp-top__title { font-size: 1rem; letter-spacing: 0; }
+  .sp-top__hint { color: var(--text-2); font-size: 0.875rem; max-width: 46ch; margin-top: 2px; }
+  .sp-top__actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .sp-top__actions .btn { background: rgba(20,22,26,0.85); }
+  kbd { font-family: var(--font-mono); font-size: 0.75rem; padding: 1px 6px; border: 1px solid var(--line-strong); border-radius: 5px; color: var(--text-2); margin-left: 4px; }
+  .sp-bar {
+    position: absolute; z-index: 5; left: 50%; bottom: 18px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px; padding: 8px 8px 8px 8px; max-width: calc(100vw - 32px);
+    border-radius: 18px; border: 1px solid var(--line-strong); background: color-mix(in srgb, #15171b 90%, transparent);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 20px 50px -16px rgba(0,0,0,0.9);
+  }
+  .sp-bar__picks { display: flex; gap: 4px; }
+  .sp-pick { display: inline-flex; align-items: baseline; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid transparent; background: none; color: var(--text-2); font-weight: 500; font-size: 0.9375rem; cursor: pointer; white-space: nowrap; transition: color var(--t-micro), background-color var(--t-micro), border-color var(--t-micro); }
+  .sp-pick__n { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-3); }
+  .sp-pick:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .sp-pick[aria-pressed="true"] { color: var(--text); border-color: rgba(165,150,255,0.5); background: var(--accent-wash); }
+  .sp-pick[aria-pressed="true"] .sp-pick__n { color: var(--accent); }
+  .sp-bar__now { display: flex; align-items: center; gap: 14px; padding: 0 6px 0 14px; border-left: 1px solid var(--line); white-space: nowrap; }
+  .sp-bar__now > * { flex: none; }
+  .sp-bar__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 1180px) { .sp-pick__name { display: none; } }
+
+  /* ?debug=input — on-screen log for physical-device testing. */
+  :global(.sp-debug) { position: absolute; z-index: 6; left: 16px; top: 96px; width: min(460px, 44vw); max-height: 60vh; overflow: hidden; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: rgba(10,11,13,0.92); font: 12px/1.45 var(--font-mono); color: var(--text-2); }
+  :global(.sp-debug__head) { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+  :global(.sp-debug__head b) { color: var(--text); }
+  :global(.sp-debug__counts) { flex: 1 1 100%; order: 3; color: var(--text-3); }
+  :global(.sp-debug button) { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+  :global(.sp-debug__rows) { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  :global(.sp-debug__rows li) { display: grid; grid-template-columns: 52px 40px 62px 1fr; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  :global(.sp-debug__rows li span:last-child) { overflow: hidden; text-overflow: ellipsis; }
+  :global(.sp-debug__rows li.is-step) { color: #8fe0b0; }
+  :global(.sp-debug__rows li.is-boundary) { color: var(--accent-strong); }
+  :global(.sp-debug__rows li.is-reset) { color: #ffd38f; }
+</style>

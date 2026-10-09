@@ -1,0 +1,51 @@
+order: 4
+name: "Portfolio Risk Analytics"
+short: "Risk Analytics"
+kind: "Backend · Financial data"
+purpose: "Measures a stock portfolio’s historical return, volatility, drawdown and correlations, and returns an error instead of guessing when data is missing."
+host: "iamjeshurun.github.io/portfolio-risk-analytics"
+demo: "https://iamjeshurun.github.io/portfolio-risk-analytics/"
+code: "https://github.com/iamjeshurun/portfolio-risk-analytics"
+deep:
+  label: "Formulas & assumptions"
+  href: "https://github.com/iamjeshurun/portfolio-risk-analytics#financial-assumptions-and-formulas"
+demoNote: "Opens on a precomputed, labelled example. Historical analysis only, not investment advice."
+shots:
+  - src: ../../assets/shots/risk-0.webp
+    alt: "Portfolio Risk Analytics demo opening on a labelled example portfolio, showing growth of one dollar above a baseline and the drawdown below it."
+  - src: ../../assets/shots/risk-1.webp
+    alt: "Portfolio Risk Analytics demo example analysis: holdings form, summary measures and growth chart."
+  - src: ../../assets/shots/risk-2.webp
+    alt: "Portfolio Risk Analytics demo: drawdown chart, daily-return histogram and correlation table."
+phone: ../../assets/shots/risk-phone.webp
+problem: "Portfolio risk numbers are easy to compute wrongly. Forward-filled gaps, adjusted prices mixed from different fetches, and silent rebalancing assumptions all produce figures that look confident but are wrong."
+built: "I built a FastAPI service with pure pandas analytics, a SQLite price cache, documented endpoints with a single error format, and a dependency-free dashboard with hand-built SVG charts."
+summary: "A FastAPI service and dashboard for historical risk measures, with validated inputs, a price cache, and explicit errors for missing data."
+limits: "There is no trading calendar, so a date missing for every asset looks like a holiday. Yahoo Finance is unofficial and can rate-limit requests. Annualizing with √252 is an approximation."
+flow:
+  - "Holdings + dates"
+  - "Validate (Pydantic)"
+  - "SQLite cache or Yahoo fetch"
+  - "Data-quality rules"
+  - "Pure analytics → JSON"
+decisions:
+  - title: "Refuse to fill gaps"
+    body: "An interior gap returns MISSING_DATA instead of being dropped or forward-filled. Dropping the date would turn a multi-day move into one “daily” return."
+  - title: "Replace, don’t patch, the cache"
+    body: "A refresh replaces a symbol’s whole cached history, because adjusted closes change retroactively after splits and dividends."
+evidence:
+  - "Offline tests use deterministic price fixtures and dependency overrides. One test pins buy-and-hold against daily rebalancing."
+  - "JavaScript tests check that the page’s own calculations reproduce the API’s volatility and drawdown dates."
+boundary:
+  - title: "Precomputed example"
+    body: "40% AAPL, 35% MSFT, 25% GOOG, 2023–2025. An illustration, not my own returns."
+  - title: "Live result"
+    body: "Labelled with fetch and calculation time. Errors never fall back to stale numbers."
+headline: "See the risk behind the return."
+blurb: "Explores historical performance, drawdowns, volatility, and correlations for a selected stock portfolio."
+featuredDecision: 0
+workShot:
+  src: ../../assets/shots/risk-work.webp
+  alt: "Example portfolio chart from 2023 to 2025: growth of one dollar above a baseline and the fall from the running peak below it. The deepest fall, −26.9% on April 8, 2025, recovered past its December 17, 2024 peak on August 8, 2025."
+  caption: "Precomputed example in the public demo (40% AAPL, 35% MSFT, 25% GOOG, held 2023–2025): growth of $1 above the line, fall from the running peak below. Historical analysis, not investment performance."
+  wide: true

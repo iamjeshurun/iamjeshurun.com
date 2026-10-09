@@ -1,0 +1,29 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+const projects = (await getCollection('work')).sort((a, b) => a.data.order - b.data.order);
+---
+<Base title="Page not found — Jeshurun" description="This page doesn’t exist. Here are the projects instead.">
+  <section class="nf">
+    <p class="eyebrow">404</p>
+    <h1>This page doesn’t exist.</h1>
+    <p class="nf__lede">The link may be outdated. These are the four projects on this site:</p>
+    <ul>
+      {projects.map((p) => <li><a href={`/work/${p.id}/`}><span>{String(p.data.order).padStart(2, '0')}</span>{p.data.name}</a></li>)}
+    </ul>
+    <p class="nf__more"><a class="btn btn--primary" href="/">Go to the homepage</a> <a class="btn" href="/resume.pdf">View résumé</a></p>
+    <p class="nf__hint">Looking for a project demo? They live at <code>iamjeshurun.github.io/&lt;project&gt;/</code>, for example <a class="link" href="https://iamjeshurun.github.io/InsightPulse/">InsightPulse</a>.</p>
+  </section>
+</Base>
+<style>
+  .nf { max-width: 880px; margin: 0 auto; padding: 72px var(--gutter) 96px; }
+  h1 { font-family: var(--font-display); font-size: clamp(2.5rem, 7vw, 5rem); letter-spacing: -0.045em; line-height: 0.95; margin: 14px 0 18px; }
+  .nf__lede { color: var(--text-2); font-size: 1.125rem; }
+  ul { list-style: none; padding: 0; margin: 28px 0; border-top: 1px solid var(--line); }
+  li a { display: grid; grid-template-columns: 40px 1fr; align-items: baseline; min-height: 56px; padding: 14px 0; border-bottom: 1px solid var(--line); text-decoration: none; font-size: 1.25rem; font-weight: 600; transition: color var(--t-micro); }
+  li a:hover { color: var(--accent-strong); }
+  li span { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--accent); font-weight: 400; }
+  .nf__more { display: flex; flex-wrap: wrap; gap: 10px; }
+  .nf__hint { margin-top: 28px; color: var(--text-3); font-size: 0.9375rem; }
+  code { font-family: var(--font-mono); color: var(--text-2); }
+</style>

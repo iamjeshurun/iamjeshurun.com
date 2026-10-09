@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+import Home from '../components/Home.astro';
+import Spatial from '../components/Spatial.astro';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Jeshurun',
+  url: 'https://iamjeshurun.com/',
+  description: 'Computer science and public health student at Stetson University.',
+  affiliation: { '@type': 'CollegeOrUniversity', name: 'Stetson University' },
+  sameAs: ['https://github.com/iamjeshurun', 'https://linkedin.com/in/akwasijeshurun'],
+};
+---
+<Base
+  title="Jeshurun — Software Engineer"
+  description="Jeshurun builds cool things. Computer science and public health student at Stetson University, with four projects to explore: live demos, code and case studies."
+  home
+  jsonLd={jsonLd}
+>
+  <Home>
+    {/* Optional Spatial view: desktop only; shown once its controller is ready (B remains the default). */}
+    <button slot="picker-actions" class="link sp-launch" type="button" id="spatial-launch" aria-haspopup="dialog" hidden>Explore in spatial view <span aria-hidden="true">⤢</span></button>
+  </Home>
+  <Spatial />
+</Base>
+<style>
+  .sp-launch { font-size: 0.9375rem; margin: -6px 0 6px; }
+  .sp-launch[hidden] { display: none; }
+  @media (max-width: 899px) { .sp-launch { display: none; } }
+</style>

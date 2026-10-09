@@ -1,0 +1,100 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Frame from '../../components/Frame.astro';
+
+export async function getStaticPaths() {
+  const all = (await getCollection('work')).sort((a, b) => a.data.order - b.data.order);
+  return all.map((entry, i) => ({ params: { slug: entry.id }, props: { entry, next: all[(i + 1) % all.length] } }));
+}
+interface Props { entry: CollectionEntry<'work'>; next: CollectionEntry<'work'> }
+const { entry, next } = Astro.props;
+const p = entry.data;
+const n = (o: number) => String(o).padStart(2, '0');
+---
+<Base title={`${p.name} — Jeshurun`} description={p.purpose} ogImage={`/og/${entry.id}.png`} current="work">
+  <article class="cs">
+    <div class="cs__back"><a class="btn btn--sm" href="/#work" data-back><span aria-hidden="true">←</span> All work</a></div>
+    <div class="cs__hero">
+      <Frame src={p.shots[0].src} alt={p.shots[0].alt} host={p.host} sizes="(min-width: 1200px) 1100px, 94vw" eager vt slug={entry.id} />
+    </div>
+    <header class="cs__head">
+      <p class="eyebrow">{n(p.order)} · {p.kind}</p>
+      <h1 class="cs__title">{p.name}</h1>
+      <p class="cs__purpose">{p.purpose}</p>
+      <div class="cs__actions">
+        <a class="btn btn--primary" href={p.demo} rel="noopener">Open live demo <span class="arrow--out" aria-hidden="true">↗</span></a>
+        <a class="btn" href={p.code} rel="noopener">View code <span class="arrow--out" aria-hidden="true">↗</span></a>
+      </div>
+      <p class="cs__note">{p.demoNote}</p>
+    </header>
+
+    <section class="cs-sec" aria-labelledby="s1"><h2 id="s1"><b>01</b>Problem</h2><div><p>{p.problem}</p></div></section>
+    <section class="cs-sec" aria-labelledby="s2"><h2 id="s2"><b>02</b>What I built</h2><div>
+      <p>{p.built}</p>
+      <div class="cs-shots">
+        {p.shots.slice(1).map((s) => <Frame src={s.src} alt={s.alt} host={p.host} sizes="(min-width: 1200px) 420px, (min-width: 700px) 45vw, 92vw" />)}
+      </div>
+    </div></section>
+    <section class="cs-sec" aria-labelledby="s3"><h2 id="s3"><b>03</b>Data flow</h2><div>
+      <ol class="cs-flow">{p.flow.map((f) => <li>{f}</li>)}</ol>
+    </div></section>
+    <section class="cs-sec" aria-labelledby="s4"><h2 id="s4"><b>04</b>Decisions</h2><div class="cs-decisions">
+      {p.decisions.map((d) => <div><h3>{d.title}</h3><p>{d.body}</p></div>)}
+    </div></section>
+    <section class="cs-sec" aria-labelledby="s5"><h2 id="s5"><b>05</b>Validation</h2><div>
+      <ul>{p.evidence.map((e) => <li>{e}</li>)}</ul>
+    </div></section>
+    <section class="cs-sec" aria-labelledby="s6"><h2 id="s6"><b>06</b>Limits</h2><div>
+      <p>{p.limits}</p>
+      <div class="cs-boundary">{p.boundary.map((b) => <div><b>{b.title}</b><span>{b.body}</span></div>)}</div>
+    </div></section>
+    <section class="cs-sec" aria-labelledby="s7"><h2 id="s7"><b>07</b>Links</h2><div class="cs-links">
+      <a href={p.demo} rel="noopener"><b>Live demo ↗</b><span>{p.host}</span></a>
+      <a href={p.code} rel="noopener"><b>Repository ↗</b><span>{p.code.replace('https://', '')}</span></a>
+      <a href={p.deep.href} rel="noopener"><b>{p.deep.label} ↗</b><span>Engineering detail</span></a>
+    </div></section>
+
+    <a class="cs-next" href={`/work/${next.id}/`}>
+      <span class="eyebrow">Next project</span>
+      <span class="cs-next__name">{next.data.name} <span aria-hidden="true">→</span></span>
+    </a>
+  </article>
+</Base>
+
+<style>
+  .cs { max-width: 1180px; margin: 0 auto; padding: 20px var(--gutter) 64px; }
+  .cs__back { margin-bottom: 24px; }
+  .cs__hero { margin-bottom: clamp(28px, 4vw, 48px); }
+  .cs__hero :global(.frame) { max-width: min(100%, calc(54svh * 1.6 + 30px)); }
+  .cs__title { font-family: var(--font-display); font-size: clamp(2.5rem, 6.4vw, 5.5rem); letter-spacing: -0.045em; line-height: 0.95; margin: 14px 0 20px; }
+  .cs__purpose { font-size: clamp(1.25rem, 2vw, 1.5rem); line-height: 1.4; color: var(--text-2); max-width: 46ch; }
+  .cs__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .cs__note { margin-top: 14px; color: var(--text-3); font-size: 0.9375rem; }
+  .cs__head { margin-bottom: 48px; }
+  .cs-sec { display: grid; gap: 14px 48px; padding: 36px 0; border-top: 1px solid var(--line); }
+  .cs-sec > * { min-width: 0; }
+  @media (min-width: 860px) { .cs-sec { grid-template-columns: 240px 1fr; } }
+  .cs-sec h2 { font-size: 0.8125rem; font-family: var(--font-mono); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); line-height: 1.8; }
+  .cs-sec h2 b { color: var(--accent); font-weight: 500; margin-right: 10px; }
+  .cs-sec p, .cs-sec li { color: var(--text-2); max-width: 68ch; }
+  .cs-sec ul { margin: 0; padding-left: 1.1em; display: grid; gap: 10px; }
+  .cs-shots { display: grid; gap: 16px; margin-top: 24px; }
+  @media (min-width: 700px) { .cs-shots { grid-template-columns: 1fr 1fr; } }
+  .cs-flow { display: flex; flex-wrap: wrap; gap: 10px 30px; align-items: center; list-style: none; padding: 0; margin: 0; }
+  .cs-flow li { position: relative; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-size: 0.9375rem; color: var(--text); background: var(--surface); }
+  .cs-flow li + li::before { content: '→'; position: absolute; left: -22px; top: 50%; transform: translateY(-50%); color: var(--accent); }
+  .cs-decisions { display: grid; gap: 20px; }
+  .cs-decisions h3 { font-size: 1.125rem; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .cs-boundary { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 20px; }
+  .cs-boundary div { padding: 16px; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--line); }
+  .cs-boundary b { display: block; margin-bottom: 4px; }
+  .cs-boundary span { color: var(--text-2); font-size: 0.9375rem; }
+  .cs-links { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .cs-links a { display: grid; gap: 2px; padding: 16px 18px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); text-decoration: none; transition: border-color var(--t-micro), background-color var(--t-micro); }
+  .cs-links a:hover { border-color: var(--accent); background: var(--accent-wash); }
+  .cs-links span { color: var(--text-3); font-size: 0.875rem; overflow-wrap: anywhere; }
+  .cs-next { display: grid; gap: 8px; margin-top: 56px; padding: 32px 0; border-top: 1px solid var(--line); text-decoration: none; }
+  .cs-next__name { font-family: var(--font-display); font-size: clamp(1.75rem, 4vw, 3rem); letter-spacing: -0.04em; line-height: 1; transition: color var(--t-micro); }
+  .cs-next:hover .cs-next__name { color: var(--accent-strong); }
+</style>

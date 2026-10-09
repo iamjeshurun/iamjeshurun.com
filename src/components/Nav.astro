@@ -1,0 +1,24 @@
+---
+import MotionToggle from './MotionToggle.astro';
+interface Props { home?: boolean; current?: 'work' }
+const { home = false, current } = Astro.props;
+// On the homepage the dock scrolls to sections; elsewhere it leads back to them.
+const p = home ? '' : '/';
+---
+<header class="topbar">
+  <a class="topbar__mark" href="/" aria-label="Jeshurun, home"><i aria-hidden="true"></i>iamjeshurun.com</a>
+  <div class="topbar__actions">
+    <a class="link" href="https://linkedin.com/in/akwasijeshurun" rel="noopener">LinkedIn <span class="arrow--out" aria-hidden="true">↗</span></a>
+    <a class="link" href="/resume.pdf">Résumé <span aria-hidden="true">↓</span></a>
+  </div>
+</header>
+<nav class="dock" aria-label="Primary">
+  <div class="nav__links">
+    <span class="nav__pill" aria-hidden="true"></span>
+    <a href={`${p}#work`} data-section="work" data-current={current === 'work' ? 'true' : undefined}>Work</a>
+    <a href={`${p}#about`} data-section="about">About</a>
+    <a href={`${p}#contact`} data-section="contact">Contact</a>
+  </div>
+  <span class="dock__sep" aria-hidden="true"></span>
+  <MotionToggle />
+</nav>

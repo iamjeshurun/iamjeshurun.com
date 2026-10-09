@@ -1,0 +1,86 @@
+---
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import geistLatin from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  home?: boolean;
+  current?: 'work';
+  noindex?: boolean;
+  jsonLd?: object;
+}
+const { title, description, ogImage = '/og/home.png', home = false, current, noindex = false, jsonLd } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const og = new URL(ogImage, Astro.site).href;
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <meta name="theme-color" content="#0d0e10" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="sitemap" href="/sitemap-index.xml" />
+  <link rel="preload" href={geistLatin} as="font" type="font/woff2" crossorigin />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Jeshurun" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={og} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={og} />
+  {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+  <link rel="expect" href="#main" blocking="render" />
+  <script is:inline>
+    // Pair the preview a visitor used with the case-study header so the frame travels between pages.
+    // Must be a classic script in <head> so `pagereveal` is registered before the first render.
+    (function () {
+      var slugOf = function (url) { var m = url && new URL(url).pathname.match(/^\/work\/([\w-]+)\/$/); return m && m[1]; };
+      var visible = function (el) { var r = el.getBoundingClientRect(); return r.width > 40 && r.bottom > 0 && r.top < innerHeight; };
+      var source = function (slug) {
+        if (!slug || document.querySelector('[style*="view-transition-name"]')) return null;
+        // Priority: the selected desktop preview, the phone card, then the Selected Work panel.
+        var q = '[data-slug="' + slug + '"]';
+        var c = document.querySelectorAll('.pset[data-pos="active"] .layer--front .frame' + q + ', .mcard .frame' + q + ', .panel__shot .frame' + q);
+        for (var i = 0; i < c.length; i++) if (visible(c[i])) return c[i];
+        return null;
+      };
+      addEventListener('pageswap', function (e) {
+        if (!e.viewTransition || !e.activation || !e.activation.entry) return;
+        var el = source(slugOf(e.activation.entry.url));
+        if (el) el.style.viewTransitionName = 'shot';
+      });
+      addEventListener('pagereveal', function (e) {
+        if (!e.viewTransition || !window.navigation || !navigation.activation || !navigation.activation.from) return;
+        var el = source(slugOf(navigation.activation.from.url));
+        if (el) { el.style.viewTransitionName = 'shot'; e.viewTransition.finished.finally(function () { el.style.viewTransitionName = ''; }); }
+      });
+      addEventListener('pageshow', function (e) {
+        if (e.persisted) document.querySelectorAll('.pset .frame, .mcard .frame, .panel__shot .frame').forEach(function (el) { el.style.viewTransitionName = ''; });
+      });
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <Nav home={home} current={current} />
+  <main id="main"><slot /></main>
+  <Footer />
+  <script>import '../scripts/site';</script>
+</body>
+</html>
