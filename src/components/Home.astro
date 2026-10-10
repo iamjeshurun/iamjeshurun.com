@@ -260,12 +260,17 @@ const pos = (i: number) => (i === 0 ? 'active' : 'after'); // first project is s
   .previews__enter, .previews__tilt { position: absolute; inset: 0; transform-style: preserve-3d; }
   .previews__tilt { transform: rotateY(calc(-11deg + var(--px, 0) * 1deg)) rotateX(calc(3deg + var(--py, 0) * 1deg)); }
   .pset { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 40% 50%; }
-  /* The outgoing set clears (150 ms) before the incoming one fades up, so foregrounds never double-expose. */
-  .pset[data-pos="active"] { transform: none; opacity: 1; visibility: visible; transition: transform 760ms var(--ease-out), opacity 380ms var(--ease-out) 130ms, visibility 0s; }
-  .pset[data-pos="before"], .pset[data-pos="after"] { opacity: 0; visibility: hidden; pointer-events: none; transition: transform 520ms var(--ease-in-out), opacity 150ms var(--ease-in), visibility 0s linear 520ms; }
-  .pset[data-pos="before"] { transform: translateY(-20%) rotateX(26deg) scale(0.96); }
-  .pset.is-gone { transition: none; }
-  .pset[data-pos="after"] { transform: translateY(24%) rotateX(-24deg) scale(0.96); }
+  /* The outgoing set clears (150 ms) before the incoming one fades up, so foregrounds never double-expose.
+     Opacity lives on each screen, not on the 3D set: Safari does not apply a fading group's opacity to its
+     preserve-3d children, so an outgoing set stayed opaque and sliced through the incoming one. Inactive
+     sets also sit 400 px further back, so their tilted planes can never intersect the active set's. */
+  .pset[data-pos="active"] { transform: none; visibility: visible; transition: transform 760ms var(--ease-out), visibility 0s; }
+  .pset[data-pos="active"] :global(.frame) { opacity: 1; transition: opacity 380ms var(--ease-out) 130ms; }
+  .pset[data-pos="before"], .pset[data-pos="after"] { visibility: hidden; pointer-events: none; transition: transform 520ms var(--ease-in-out), visibility 0s linear 520ms; }
+  .pset[data-pos="before"] :global(.frame), .pset[data-pos="after"] :global(.frame) { opacity: 0; transition: opacity 150ms var(--ease-in); }
+  .pset[data-pos="before"] { transform: translate3d(0, -20%, -400px) rotateX(26deg) scale(0.96); }
+  .pset.is-gone, .pset.is-gone :global(.frame) { transition: none; }
+  .pset[data-pos="after"] { transform: translate3d(0, 24%, -400px) rotateX(-24deg) scale(0.96); }
   .layer { position: absolute; left: 0; top: 21%; width: 84%; transform-style: preserve-3d; }
   .layer--back1 { transform: translate3d(13%, -25%, -170px); pointer-events: none; }
   .layer--back2 { transform: translate3d(17%, 27%, -260px); pointer-events: none; }
@@ -276,6 +281,8 @@ const pos = (i: number) => (i === 0 ? 'active' : 'after'); // first project is s
      takes the pointer. Wrappers and supporting layers never intercept clicks. */
   .previews__enter, .previews__tilt, .pset, .layer { pointer-events: none; }
   .layer__open { position: absolute; inset: 0; z-index: 2; border-radius: var(--radius); pointer-events: auto; }
+  /* An outgoing set stays in 3D while it animates away; its link must never catch a click meant for the incoming one. */
+  .pset:not([data-pos="active"]) .layer__open { pointer-events: none; }
   .layer__drift { animation: drift-a 9s ease-in-out infinite alternate; animation-play-state: paused; }
   .layer--back2 .layer__drift { animation-name: drift-b; animation-duration: 12s; }
   .previews.is-live .layer__drift { animation-play-state: running; }

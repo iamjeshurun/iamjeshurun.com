@@ -33,7 +33,8 @@ const STATE = () => {
     openHref: sets[activeSet]?.querySelector('.layer__open')?.getAttribute('href'),
     detHref: dets.find((d) => d.classList.contains('is-active'))?.querySelector('a')?.getAttribute('href'),
     visDetails: dets.filter((d) => op(d) > 0.05).length,
-    visSets: sets.filter((s) => op(s) > 0.05).length,
+    // A set is visible when it is not hidden and its screens are not faded out (opacity lives on each screen).
+    visSets: sets.filter((s) => getComputedStyle(s).visibility !== 'hidden' && op(s.querySelector('.layer--front .frame')) > 0.05).length,
     pill: [...document.querySelectorAll('.mwork__pill')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     rotating: picker.dataset.rotating,
   };
@@ -231,6 +232,32 @@ for (const how of ['browser back', 'All work button']) {
   ok('reduced motion: selection is immediate and consistent, nothing running', st.sel === 3 && st.visSets === 1 && st.visDetails === 1 && agree(st) && running === 0, JSON.stringify({ ...st, running }));
   await p.mouse.move(5, 895); await p.waitForTimeout(8000);
   ok('reduced motion: no auto-advance', (await sel(p)) === 3);
+  await ctx.close();
+}
+
+/* 11. Selected Work index follows the reader: the centred panel's link, and only that one, is current. */
+{
+  const [ctx, p] = await open();
+  const marks = [];
+  for (const slug of SLUGS) {
+    await p.evaluate((id) => document.getElementById('p-' + id).scrollIntoView({ block: 'center', behavior: 'instant' }), slug);
+    await p.waitForTimeout(300);
+    marks.push(await p.evaluate(() => [...document.querySelectorAll('.work__aside a')].map((a) => a.hasAttribute('aria-current'))));
+  }
+  ok('Selected Work index marks the panel being read', marks.every((m, i) => m.filter(Boolean).length === 1 && m[i]), JSON.stringify(marks));
+  await ctx.close();
+}
+
+/* 12. Once the visitor chooses, the countdown loop stops: no animation frames while the page is idle. */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { const raf = window.requestAnimationFrame.bind(window); window.__rafCalls = 0; window.requestAnimationFrame = (f) => { window.__rafCalls++; return raf(f); }; });
+  const p = await ctx.newPage(); await p.bringToFront();
+  await p.goto(BASE + HOME, { waitUntil: 'networkidle' }); await p.waitForTimeout(1400);
+  await p.click('#tab-1'); await p.mouse.move(10, 880); await p.waitForTimeout(1200);
+  const before = await p.evaluate(() => window.__rafCalls); await p.waitForTimeout(2000);
+  const idle = (await p.evaluate(() => window.__rafCalls)) - before;
+  ok('no animation-frame loop after a choice (idle 2 s)', idle < 5, `${idle} frames`);
   await ctx.close();
 }
 

@@ -21,7 +21,7 @@ node scripts/spatial-check.mjs       # spatial view tests (add --browser=webkit;
 node scripts/wheel-traces.mjs        # wheel-gesture classifier against modelled traces (no browser)
 ```
 
-`npm run check` builds nothing itself. Run `npm run build` and `npm run preview` first. It checks routes, the 404 page, the résumé file, metadata, the public-name and no-email/no-phone rules, heading order, alt text, overflow at 390 px and 1440 px (also at 200% text), auto-advance, pause, keyboard order, reduced motion, and the preview → case-study view transition.
+`npm run check` builds nothing itself. Run `npm run build` and `npm run preview` first. It checks routes, the 404 page, the résumé file, metadata, the public-name rule (no phone number; the only email is the published contact address), heading order, alt text, overflow at 390 px and 1440 px (also at 200% text), auto-advance, pause, keyboard order, reduced motion, and the preview → case-study view transition.
 
 ## Updating content
 
@@ -31,13 +31,13 @@ node scripts/wheel-traces.mjs        # wheel-gesture classifier against modelled
 | Screenshots | `src/assets/shots/<key>-0/1/2.webp` (2400×1500, 16:10) for the opening previews and case studies, `<key>-phone.webp` (1000 px wide) for phone cards, and one cropped visual per project for Selected Work (`workShot` in the YAML, with its alt text and caption; `wide: true` gives it the full panel width). Astro generates the AVIF/WebP sizes. |
 | Homepage and project order | `src/components/Home.astro` (opening, picker, Selected Work) rendered by `src/pages/index.astro`. The `order` field in each YAML sets the sequence everywhere (01 InsightPulse, 02 Tracker, 03 Campus Health, 04 Risk); order 1 opens selected. Slugs and case-study URLs don't depend on order. |
 | About, AI workflow note, experience | `src/components/About.astro` |
-| Contact links | `src/components/Contact.astro`, `src/components/Footer.astro`, and `sameAs` in `src/pages/index.astro` |
+| Contact links | `src/components/Contact.astro` (LinkedIn, email, GitHub, résumé) and `sameAs` in `src/pages/index.astro` |
 | Résumé | Replace `public/resume.pdf` with the new PDF and rebuild. The site serves it unchanged. |
 | Social images | `npm run og` re-renders `public/og/*.png` from the YAML and screenshots. |
 
 Each project has a `headline` (used in the picker, phone cards and social images), a short `blurb`, and a `featuredDecision` (index into `decisions`) shown in Selected Work. Captions under the work visuals carry the data qualifications (live sample, fictional, synthetic, precomputed).
 
-Writing rules the copy follows: the public name is "Jeshurun" everywhere except inside the PDF; every number appears with its context; the boundary between demo data and real data is stated for every project; there's no phone number or email address.
+Writing rules the copy follows: the public name is "Jeshurun" everywhere except inside the PDF; every number appears with its context; the boundary between demo data and real data is stated for every project; there's no phone number, and the only email address is the contact one (`aoacheampong@stetson.edu`, allowed by name in `scripts/check-site.mjs`).
 
 ### Refreshing screenshots
 

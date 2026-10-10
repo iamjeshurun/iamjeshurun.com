@@ -6,9 +6,10 @@ import { readFileSync, existsSync } from 'node:fs';
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:4321';
 const SITE = 'https://iamjeshurun.com';
 const PAGES = ['/', '/work/internship-tracker/', '/work/campus-health/', '/work/insightpulse/', '/work/portfolio-risk/'];
-// Public pages must show no email address or phone number. Extra private terms (e.g. legal name) can be
+// Public pages must show no phone number and no email address other than PUBLIC_EMAIL. Extra private terms (e.g. legal name) can be
 // listed in scripts/private-terms.json, which is git-ignored so the terms themselves are never published.
 const PRIVATE_TERMS = new URL('./private-terms.json', import.meta.url);
+const PUBLIC_EMAIL = 'aoacheampong@stetson.edu';
 const FORBIDDEN_TEXT = [/[\w.+-]+@[\w-]+\.[a-z]{2,}/i, /\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/,
   ...(existsSync(PRIVATE_TERMS) ? JSON.parse(readFileSync(PRIVATE_TERMS, 'utf8')).map((t) => new RegExp(t, 'i')) : [])];
 const results = [];
@@ -78,8 +79,9 @@ for (const [w, h] of [[1440, 900], [390, 844]]) {
       ok(`${tag} og:image absolute on domain`, (info.ogImage || '').startsWith(SITE + '/og/'), info.ogImage);
       ok(`${tag} one h1, no heading skips`, info.h1 === 1 && !info.headingSkip, `h1=${info.h1} skip=${info.headingSkip}`);
       ok(`${tag} every image has alt`, info.imgsNoAlt === 0, String(info.imgsNoAlt));
-      const leak = FORBIDDEN_TEXT.filter((re) => re.test(info.text)).map(String);
-      ok(`${tag} public name only, no email/phone`, leak.length === 0, leak.join(' '));
+      const text = info.text.split(PUBLIC_EMAIL).join(' ');
+      const leak = FORBIDDEN_TEXT.filter((re) => re.test(text)).map(String);
+      ok(`${tag} public name only, no phone, only the published email`, leak.length === 0, leak.join(' '));
       info.links.filter((l) => l.startsWith(BASE)).forEach((l) => internal.add(l.split('#')[0]));
     }
     ok(`${tag} no horizontal overflow`, info.overflow <= 0, `${info.overflow}px`);

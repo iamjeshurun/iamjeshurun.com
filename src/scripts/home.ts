@@ -51,16 +51,16 @@ export function initHome() {
     if (by === 'user') syncCarousel(i, true);
   }
 
+  // The countdown loop runs only while rotation is on; once the visitor chooses, it stops for good.
   function tick(now: number) {
+    if (!rotating) { raf = 0; return; }
     const dt = last ? Math.min(100, now - last) : 0; last = now;
-    if (rotating) {
-      if (!hold()) elapsed += dt;
-      tabs[sel.get()].style.setProperty('--p', String(Math.min(1, elapsed / DWELL)));
-      if (elapsed >= DWELL) choose(sel.get() + 1, 'auto');
-    }
+    if (!hold()) elapsed += dt;
+    tabs[sel.get()].style.setProperty('--p', String(Math.min(1, elapsed / DWELL)));
+    if (elapsed >= DWELL) choose(sel.get() + 1, 'auto');
     raf = requestAnimationFrame(tick);
   }
-  whileVisible(picker, () => { last = 0; raf = requestAnimationFrame(tick); }, () => cancelAnimationFrame(raf));
+  whileVisible(picker, () => { if (rotating) { last = 0; raf = requestAnimationFrame(tick); } }, () => { cancelAnimationFrame(raf); raf = 0; });
 
   // While the visitor works with the projects, the supporting layers' drift pauses in place (no jump).
   const settle = () => previews.classList.toggle('is-settled', hold());
@@ -170,7 +170,7 @@ export function initHome() {
 
   /* ---------- Selected Work: screens flatten as they arrive; the index follows the reader ---------- */
   const shots = [...document.querySelectorAll<HTMLElement>('.panel__shot .frame')];
-  const panels = [...document.querySelectorAll<HTMLElement>('.panel')];
+  const panels = [...document.querySelectorAll<HTMLElement>('.wpanel')];
   const asideLinks = [...document.querySelectorAll<HTMLAnchorElement>('.work__aside a')];
   let sraf = 0;
   function onScroll() {
